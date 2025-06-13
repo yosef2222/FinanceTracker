@@ -1,5 +1,5 @@
 using FinHelper.Models;
-using FinHelper.Models.Users;
+using FinHelper.Models.User;
 
 namespace FinHelper.Services.Auth;
 

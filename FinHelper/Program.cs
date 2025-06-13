@@ -2,7 +2,11 @@ using System.Text;
 using System.Text.Json.Serialization;
 using FinHelper.Data;
 using FinHelper.Models;
+using FinHelper.Models.Budget;
+using FinHelper.Models.Transaction;
+using FinHelper.Services;
 using FinHelper.Services.Auth;
+using FinHelper.Services.Dashboard;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -81,8 +85,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         mysqlOptions => mysqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null)
     ));
 
-builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<JwtService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITransactionService, TransactionService>();
+builder.Services.AddScoped<IBudgetService, BudgetService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

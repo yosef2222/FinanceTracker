@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+namespace FinHelper.Models.User;
 
 public class BirthDateValidationAttribute : ValidationAttribute
 {

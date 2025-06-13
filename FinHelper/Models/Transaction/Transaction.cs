@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using FinHelper.Models;
 
-namespace Models.Transaction;
+namespace FinHelper.Models.Transaction;
 
 public class Transaction
 {
@@ -27,7 +27,7 @@ public class Transaction
     public Guid CategoryId { get; set; }
     
     [ForeignKey("UserId")]
-    public User User { get; set; }
+    public User.User User { get; set; }
     
     [ForeignKey("CategoryId")]
     public Category.Category Category { get; set; }

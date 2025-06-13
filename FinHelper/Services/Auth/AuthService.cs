@@ -1,6 +1,6 @@
 using FinHelper.Data;
 using FinHelper.Models;
-using FinHelper.Models.Users;
+using FinHelper.Models.User;
 using Microsoft.EntityFrameworkCore;
 
 namespace FinHelper.Services.Auth;

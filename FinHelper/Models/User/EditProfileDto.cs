@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace FinHelper.Models.Users;
+namespace FinHelper.Models.User;
 
 public class EditProfileDto
 {

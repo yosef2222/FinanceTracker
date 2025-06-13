@@ -1,10 +1,9 @@
-
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 
-namespace FinHelper.Models;
+namespace FinHelper.Services;
 
 public class JwtService
 {
@@ -21,16 +20,16 @@ public class JwtService
         _tokenLifetimeInHours = int.Parse(config["Jwt:TokenLifetimeInHours"] ?? "1");
     }
 
-    public string GenerateToken(User user)
+    public string GenerateToken(Models.User.User user)
     {
         if (user == null) throw new ArgumentNullException(nameof(user));
 
         var claims = new List<Claim>
         {
-            new Claim("Id", user.Id.ToString()),
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString("D")), 
             new Claim(JwtRegisteredClaimNames.Sub, user.FullName ?? string.Empty),
             new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("D")) 
         };
         
 

@@ -1,3 +1,5 @@
+namespace FinHelper.Models.User;
+
 public class UserProfileDto
 {
     public string FullName { get; set; }

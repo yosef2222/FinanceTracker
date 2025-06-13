@@ -1,5 +1,6 @@
+using System.Security.Claims;
 using FinHelper.Models;
-using FinHelper.Models.Users;
+using FinHelper.Models.User;
 using FinHelper.Services.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -57,16 +58,15 @@ public class AuthController : ControllerBase
     [HttpGet("profile")]
     public async Task<IActionResult> GetProfile()
     {
-        var userIdClaim = User.FindFirst("Id")?.Value;
-        if (string.IsNullOrEmpty(userIdClaim))
-            return Unauthorized("Invalid token: User ID not found.");
-
-        var userId = Guid.Parse(userIdClaim);
-
         try
         {
+            var userId = GetUserIdFromClaims();
             var profile = await _authService.GetProfile(userId);
             return Ok(profile);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ex.Message);
         }
         catch (KeyNotFoundException ex)
         {
@@ -78,20 +78,38 @@ public class AuthController : ControllerBase
     [HttpPut("profile")]
     public async Task<IActionResult> EditProfile(EditProfileDto request)
     {
-        var userIdClaim = User.FindFirst("Id")?.Value;
-        if (string.IsNullOrEmpty(userIdClaim))
-            return Unauthorized("Invalid token: User ID not found.");
-
-        var userId = Guid.Parse(userIdClaim);
-
         try
         {
+            var userId = GetUserIdFromClaims();
             var profile = await _authService.EditProfile(userId, request);
             return Ok(profile);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ex.Message);
         }
         catch (KeyNotFoundException ex)
         {
             return NotFound(ex.Message);
         }
+    }
+
+    private Guid GetUserIdFromClaims()
+    {
+        var claimValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    
+        if (string.IsNullOrEmpty(claimValue))
+        {
+            throw new UnauthorizedAccessException("User identifier claim is missing");
+        }
+    
+        if (Guid.TryParse(claimValue, out Guid userId))
+        {
+            return userId;
+        }
+    
+        // Log the invalid value for debugging
+        Console.WriteLine($"Invalid GUID format: '{claimValue}'");
+        throw new FormatException($"Invalid GUID format: '{claimValue}'");
     }
 }
