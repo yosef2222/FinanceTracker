@@ -44,3 +44,4 @@ certificates/
 *.csproj.user
 .publish/
 publish/
+appsettings.json
