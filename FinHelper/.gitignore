@@ -45,3 +45,4 @@ certificates/
 .publish/
 publish/
 appsettings.json
+appsettings.*.json
