@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json.Serialization;
 using FinHelper.Data;
@@ -5,12 +6,15 @@ using FinHelper.Models;
 using FinHelper.Models.Budget;
 using FinHelper.Models.Transaction;
 using FinHelper.Services;
+using FinHelper.Services.AIAdvice;
 using FinHelper.Services.Auth;
 using FinHelper.Services.Dashboard;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Scrutor;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,13 +33,13 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()); // Сериализация всех перечислений как строк
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()); 
     });
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles; // Игнорируем циклические ссылки
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles; 
     });
 
 builder.Services.AddSwaggerGen(options =>
@@ -85,11 +89,25 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         mysqlOptions => mysqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null)
     ));
 
+builder.Services.AddHttpClient<IAIAdviceService, YandexGPTAdviceService>(client =>
+{
+    client.BaseAddress = new Uri("https://llm.api.cloud.yandex.net/");
+    client.DefaultRequestHeaders.Accept.Add(
+        new MediaTypeWithQualityHeaderValue("application/json"));
+});
+
 builder.Services.AddSingleton<JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<YandexGPTAdviceService>();
+builder.Services.AddScoped<IAIAdviceService>(provider => 
+    provider.GetRequiredService<YandexGPTAdviceService>());
+builder.Services.Decorate<IAIAdviceService>((inner, provider) => 
+    new CachedAIAdviceService(inner, provider.GetRequiredService<IMemoryCache>()));
+
+builder.Services.AddMemoryCache();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
