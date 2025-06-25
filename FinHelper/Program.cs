@@ -2,13 +2,12 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json.Serialization;
 using FinHelper.Data;
-using FinHelper.Models;
+using FinHelper.Services.Category;
 using FinHelper.Models.Budget;
 using FinHelper.Models.Transaction;
 using FinHelper.Services;
 using FinHelper.Services.AIAdvice;
 using FinHelper.Services.Auth;
-using FinHelper.Services.Category;
 using FinHelper.Services.Dashboard;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -102,12 +101,13 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<ILoanService, LoanService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<YandexGPTAdviceService>();
 builder.Services.AddScoped<IAIAdviceService>(provider => 
     provider.GetRequiredService<YandexGPTAdviceService>());
 builder.Services.Decorate<IAIAdviceService>((inner, provider) => 
     new CachedAIAdviceService(inner, provider.GetRequiredService<IMemoryCache>()));
-builder.Services.AddScoped<ICategoryService, CategoryService>();
 
 builder.Services.AddMemoryCache();
 

@@ -19,6 +19,7 @@ public class ApplicationDbContext : DbContext
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<Budget> Budgets { get; set; }
+        public DbSet<Loan> Loans { get; set; }
         // public DbSet<Receipt> Receipts { get; set; }
         // public DbSet<AIInsight> AIInsights { get; set; }
 
@@ -48,6 +49,12 @@ public class ApplicationDbContext : DbContext
                 .WithMany(c => c.Budgets)
                 .HasForeignKey(b => b.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+            modelBuilder.Entity<Loan>()
+                .HasOne(l => l.User)
+                .WithMany(u => u.Loans)
+                .HasForeignKey(l => l.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
             
             // Seed initial categories
             modelBuilder.Entity<Category>().HasData(
