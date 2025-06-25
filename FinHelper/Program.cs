@@ -8,6 +8,7 @@ using FinHelper.Models.Transaction;
 using FinHelper.Services;
 using FinHelper.Services.AIAdvice;
 using FinHelper.Services.Auth;
+using FinHelper.Services.Category;
 using FinHelper.Services.Dashboard;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -106,6 +107,7 @@ builder.Services.AddScoped<IAIAdviceService>(provider =>
     provider.GetRequiredService<YandexGPTAdviceService>());
 builder.Services.Decorate<IAIAdviceService>((inner, provider) => 
     new CachedAIAdviceService(inner, provider.GetRequiredService<IMemoryCache>()));
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 
 builder.Services.AddMemoryCache();
 
