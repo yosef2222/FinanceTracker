@@ -62,23 +62,39 @@ public class DashboardService : IDashboardService
             });
         }
 
-        // Calculate loan summaries
+        // Calculate loan summaries for active loans
         var loanSummaries = new List<LoanSummaryDto>();
-        foreach (var loan in user.Loans)
+        foreach (var loan in user.Loans.Where(l => l.IsActive))
         {
-            // Calculate remaining months
-            var monthsPassed = (now - loan.StartDate).Days / 30;
-            var remainingMonths = loan.TermInMonths - monthsPassed;
+            // Calculate months passed and remaining
+            var monthsPassed = (int)Math.Floor((now - loan.StartDate).TotalDays / 30.436875); // Average days per month
+            var remainingMonths = loan.TermMonths - monthsPassed;
+            
+            // Calculate total paid (assuming monthly payments are consistent)
+            var totalPaid = monthsPassed * loan.MonthlyPayment;
+            
+            // Calculate remaining amount
+            var remainingAmount = loan.Amount - totalPaid;
             
             loanSummaries.Add(new LoanSummaryDto
             {
-                Name = loan.Name,
-                TotalAmount = loan.TotalAmount,
-                PaidAmount = loan.PaidAmount,
-                RemainingAmount = loan.TotalAmount - loan.PaidAmount,
+                LoanId = loan.Id,
+                LoanType = loan.Type,
+                TotalAmount = loan.Amount,
+                PaidAmount = totalPaid,
+                RemainingAmount = remainingAmount > 0 ? remainingAmount : 0,
                 RemainingMonths = remainingMonths > 0 ? remainingMonths : 0,
-                MonthlyPayment = loan.MonthlyPayment
+                MonthlyPayment = loan.MonthlyPayment,
+                InterestRate = loan.InterestRate
             });
+        }
+
+        // Calculate financial goal progress
+        decimal goalProgress = 0;
+        if (user.FinancialGoalAmount > 0)
+        {
+            goalProgress = (user.Cushion / user.FinancialGoalAmount) * 100;
+            if (goalProgress > 100) goalProgress = 100;
         }
 
         return new DashboardResponseDto
@@ -87,12 +103,12 @@ public class DashboardService : IDashboardService
             TotalBudget = budgets.Sum(b => b.Amount),
             CategorySpendings = categorySpendings,
             LoanSummaries = loanSummaries,
+            Cushion = user.Cushion,
+            Salary = user.Salary,
             FinancialGoal = user.FinancialGoal,
             FinancialGoalAmount = user.FinancialGoalAmount,
-            FinancialGoalProgress = user.FinancialGoalMonths > 0 ? 
-                (decimal)monthsPassed / user.FinancialGoalMonths * 100 : 0,
-            Cushion = user.Cushion,
-            Salary = user.Salary
+            FinancialGoalProgress = goalProgress,
+            FinancialGoalMonths = user.FinancialGoalMonths
         };
     }
 }
