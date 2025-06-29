@@ -48,7 +48,7 @@ public class AuthService : IAuthService
     public async Task<UserProfileDto> GetProfile(Guid userId)
     {
         var user = await _context.Users
-                       .Include(u => u.Loans) // Подгружаем связанные кредиты, если нужны
+                       .Include(u => u.Loans) 
                        .FirstOrDefaultAsync(u => u.Id == userId)
                    ?? throw new KeyNotFoundException("User not found");
 
@@ -60,6 +60,8 @@ public class AuthService : IAuthService
             Salary = user.Salary,
             Cushion = user.Cushion,
             FinancialGoal = user.FinancialGoal,
+            FinancialGoalAmount = user.FinancialGoalAmount,
+            FinancialGoalMonths = user.FinancialGoalMonths,
             Loans = user.Loans?.Select(l => new LoanDto
             {
                 Amount = l.Amount,
@@ -82,9 +84,11 @@ public class AuthService : IAuthService
         user.Salary = request.Salary;
         user.Cushion = request.Cushion;
         user.FinancialGoal = request.FinancialGoal;
+        user.FinancialGoalAmount = request.FinancialGoalAmount; // Добавляем эту строку
+        user.FinancialGoalMonths = request.FinancialGoalMonths; // Добавляем эту строку
 
         await _context.SaveChangesAsync();
-    
+
         return new UserProfileDto
         {
             FullName = user.FullName,
@@ -93,6 +97,8 @@ public class AuthService : IAuthService
             Salary = user.Salary,
             Cushion = user.Cushion,
             FinancialGoal = user.FinancialGoal,
+            FinancialGoalAmount = user.FinancialGoalAmount, 
+            FinancialGoalMonths = user.FinancialGoalMonths, 
             Loans = user.Loans?.Select(l => new LoanDto
             {
                 Amount = l.Amount,

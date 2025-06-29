@@ -14,5 +14,6 @@ public class User
     public decimal Salary { get; set; } = 0;
     public decimal Cushion { get; set; } = 0;
     public string FinancialGoal { get; set; } = string.Empty;
-    public string FinancialStrategy { get; set; } = string.Empty;
+    public decimal FinancialGoalAmount { get; set; }  
+    public int FinancialGoalMonths { get; set; } 
 }

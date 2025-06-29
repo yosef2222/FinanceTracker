@@ -15,5 +15,11 @@ public class EditProfileDto
     [StringLength(200, ErrorMessage = "Financial goal too long (max 200 chars)")]
     public string FinancialGoal { get; set; }
     
+    [Range(0, double.MaxValue, ErrorMessage = "Goal amount must be non-negative")]
+    public decimal FinancialGoalAmount { get; set; }
+    
+    [Range(1, int.MaxValue, ErrorMessage = "Goal months must be at least 1")]
+    public int FinancialGoalMonths { get; set; }
+    
 }
 
