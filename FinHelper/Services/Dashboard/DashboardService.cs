@@ -25,42 +25,72 @@ public class DashboardService : IDashboardService
 
     public async Task<DashboardResponseDto> GetDashboard(Guid userId)
     {
-        var now = DateTime.UtcNow;
-        var startOfMonth = new DateTime(now.Year, now.Month, 1);
-        var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1);
+         var now = DateTime.UtcNow;
+    var startOfMonth = new DateTime(now.Year, now.Month, 1);
+    var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1);
 
-        // Get user with loans
-        var user = await _context.Users
-            .Include(u => u.Loans)
-            .FirstOrDefaultAsync(u => u.Id == userId);
+    // Get user with loans
+    var user = await _context.Users
+        .Include(u => u.Loans)
+        .FirstOrDefaultAsync(u => u.Id == userId);
 
-        if (user == null)
-            throw new Exception("User not found");
+    if (user == null)
+        throw new Exception("User not found");
 
-        // Get current month transactions
-        var transactions = (await _transactionService.GetTransactions(userId, startOfMonth, endOfMonth))
-            .ToList();
+    // Get current month transactions
+    var transactions = (await _transactionService.GetTransactions(userId, startOfMonth, endOfMonth))
+        .ToList();
 
-        // Get current budgets
-        var budgets = (await _budgetService.GetBudgets(userId))
-            .Where(b => b.StartDate <= endOfMonth && b.EndDate >= startOfMonth)
-            .ToList();
+    // Get current budgets
+    var budgets = (await _budgetService.GetBudgets(userId))
+        .Where(b => b.StartDate <= endOfMonth && b.EndDate >= startOfMonth)
+        .ToList();
 
-        // Calculate category spendings
-        var categorySpendings = new List<CategorySpendingDto>();
-        foreach (var budget in budgets)
+    // Calculate category spendings by grouping transactions
+    var categorySpendings = new List<CategorySpendingDto>();
+    
+    // Group transactions by category
+    var spendingByCategory = transactions
+        .GroupBy(t => t.Category.Id)
+        .Select(g => new {
+            CategoryId = g.Key,
+            Spent = g.Sum(t => t.Amount),
+            Category = g.First().Category // All transactions in group have same category
+        })
+        .ToList();
+    
+    // Create spending DTOs for each category group
+    foreach (var spending in spendingByCategory)
+    {
+        // Find budget for this category if it exists
+        var budget = budgets.FirstOrDefault(b => b.Category.Id == spending.CategoryId);
+        
+        categorySpendings.Add(new CategorySpendingDto
         {
-            var spent = transactions
-                .Where(t => t.Category.Id == budget.Category.Id)
-                .Sum(t => t.Amount);
-            
-            categorySpendings.Add(new CategorySpendingDto
-            {
-                Category = budget.Category,
-                Spent = spent,
-                Budget = budget.Amount
-            });
-        }
+            Category = spending.Category,
+            Spent = spending.Spent,
+            Budget = budget?.Amount ?? 0
+        });
+    }
+    
+    // Add categories that have budgets but no transactions
+    var budgetedCategories = budgets.Select(b => b.Category.Id).ToList();
+    var spentCategories = spendingByCategory.Select(s => s.CategoryId).ToList();
+    var missingCategories = budgetedCategories.Except(spentCategories).ToList();
+    
+    foreach (var categoryId in missingCategories)
+    {
+        var budget = budgets.First(b => b.Category.Id == categoryId);
+        var category = budget.Category;
+        
+        categorySpendings.Add(new CategorySpendingDto
+        {
+            Category = category,
+            Spent = 0,
+            Budget = budget.Amount
+        });
+    }
+
 
         // Calculate loan summaries for active loans
         var loanSummaries = new List<LoanSummaryDto>();
