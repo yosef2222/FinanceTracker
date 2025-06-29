@@ -63,22 +63,32 @@ public class AuthService : IAuthService
 
     public async Task<UserProfileDto> EditProfile(Guid userId, EditProfileDto request)
     {
-        var user = await _context.Users.SingleOrDefaultAsync(u => u.Id == userId);
+        var user = await _context.Users
+                       .Include(u => u.Loans)
+                       .FirstOrDefaultAsync(u => u.Id == userId) 
+                   ?? throw new KeyNotFoundException("User not found");
         
-        if (user == null)
-            throw new KeyNotFoundException("User not found.");
-        
-        user.FullName = request.FullName;
+        user.FullName = request.FullName ?? user.FullName;
         user.Birthday = request.BirthDate;
-        
-        _context.Users.Update(user);
+        user.Salary = request.Salary;
+        user.Cushion = request.Cushion;
+        user.FinancialGoal = request.FinancialGoal;
+        user.FinancialStrategy = request.FinancialStrategy;
+
         await _context.SaveChangesAsync();
-        
+    
         return new UserProfileDto
         {
             FullName = user.FullName,
             Email = user.Email,
             BirthDate = user.Birthday,
+            Salary = user.Salary,
+            Cushion = user.Cushion,
+            FinancialGoal = user.FinancialGoal,
+            FinancialStrategy = user.FinancialStrategy,
+            Loans = user.Loans?.Select(l => new LoanDto
+            {
+            }).ToList() ?? new List<LoanDto>()
         };
     }
 }
