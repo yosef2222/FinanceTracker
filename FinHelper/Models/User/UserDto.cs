@@ -7,10 +7,7 @@ public class UserDto
     [Required(ErrorMessage = "Full name is required.")]
     [StringLength(50, MinimumLength = 3, ErrorMessage = "Full name must be between 3 and 50 characters.")]
     public string FullName { get; set; }
-
-    [Required(ErrorMessage = "Birth date is required.")]
-    [BirthDateValidation] 
-    public DateTime Birthday { get; set; }
+    
 
     [Required(ErrorMessage = "Email is required.")]
     [EmailAddress(ErrorMessage = "Invalid email address.")]

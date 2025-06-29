@@ -8,6 +8,5 @@ public class UserProfileDto
     public decimal Salary { get; set; }
     public decimal Cushion { get; set; }
     public string FinancialGoal { get; set; }
-    public string FinancialStrategy { get; set; }
     public List<LoanDto> Loans { get; set; } = new(); // Список кредитов
 }
