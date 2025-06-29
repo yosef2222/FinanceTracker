@@ -29,6 +29,8 @@
 
     <ItemGroup>
       <Compile Remove="Migrations\ApplicationDbContextModelSnapshot.cs" />
+      <Compile Remove="Migrations\20250613230245_InitialCreate.cs" />
+      <Compile Remove="Migrations\20250613230245_InitialCreate.Designer.cs" />
     </ItemGroup>
 
     <ItemGroup>

@@ -48,7 +48,7 @@ public class TransactionsController : BaseController
         return Ok(transactions);
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("{id}", Name = "GetTransaction")]
     public async Task<IActionResult> GetTransaction(Guid id)
     {
         var transactions = await _transactionService.GetTransactions(UserId, null, null);
