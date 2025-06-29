@@ -39,7 +39,7 @@ struct MainView: View {
                 }
                 .tag(Tab.profile)
         }
-        .accentColor(.appBlue) // Цвет выделения
+        .accentColor(.appBlue)
     }
 }
 
