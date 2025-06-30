@@ -8,6 +8,7 @@
 
 
 import SwiftUI
+import Alamofire
 
 
 // Экран "Статистика"
@@ -19,11 +20,9 @@ struct FinancialPieChartView<Data: Identifiable>: View where Data: FinancialData
     
     var body: some View {
         VStack(spacing: 15) {
-            // Заголовок диаграммы
             Text(title)
                 .font(.title2.bold())
             
-            // Круговая диаграмма
             ZStack {
                 ForEach(data) { item in
                     PieSlice(
@@ -170,59 +169,179 @@ struct DebtItem: FinancialDataProtocol {
 // MARK: - Пример использования
 
 struct StatsView: View {
-    // Пример данных
-    let expenses = [
+    @State private var expenses: [ExpenseItem] = []
+    @State private var adviceText: String = ""
+    @State private var isLoadingExpenses: Bool = false
+    @State private var isLoadingAdvice: Bool = false
+    @State private var showError: Bool = false
+    @State private var errorMessage: String = ""
+    
+    // Добавим временные данные для отладки
+    let debugExpenses = [
         ExpenseItem(name: "Еда", value: 2500, color: .blueStats1),
         ExpenseItem(name: "Транспорт", value: 1500, color: .blueStats2),
         ExpenseItem(name: "Жилье", value: 4000, color: .blueStats3)
-    ]
-    
-    let incomes = [
-        IncomeItem(name: "Зарплата", value: 30000, color: .blueStats0),
-        IncomeItem(name: "Инвестиции", value: 5000, color: .blueStats1)
-    ]
-    
-    let debts = [
-        DebtItem(name: "Ипотека", value: 15000, color: .blueStats3),
-        DebtItem(name: "Кредитка", value: 5000, color: .blueStats4)
     ]
     
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    Text("Финансовая статистика")
-                        .font(.largeTitle.bold())
+                    // 1. Секция с диаграммой расходов
+                    if expenses.isEmpty {
+                        if isLoadingExpenses {
+                            ProgressView()
+                                .frame(height: 200)
+                        } else {
+                            VStack {
+                                Text("Нет данных о расходах")
+                                    .foregroundColor(.gray)
+                                // Отображение тестовых данных для проверки
+                                FinancialPieChartView(
+                                    title: "Тестовые данные",
+                                    data: debugExpenses,
+                                    currencySymbol: "₽"
+                                )
+                            }
+                        }
+                    } else {
+                        FinancialPieChartView(
+                            title: "Ваши расходы",
+                            data: expenses,
+                            currencySymbol: "₽"
+                        )
+                    }
                     
-                    // Диаграмма расходов
-                    FinancialPieChartView(
-                        title: "Ваши расходы",
-                        data: expenses,
-                        currencySymbol: "₽"
-                    )
+                    // 2. Кнопка "Дать Совет"
+                    Button(action: {
+                        fetchAdvice()
+                    }) {
+                        if isLoadingAdvice {
+                            ProgressView()
+                                .frame(maxWidth: .infinity)
+                        } else {
+                            Text("Дать Совет")
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+                    .padding(.horizontal)
+                    .disabled(isLoadingAdvice)
                     
-                    // Диаграмма доходов
-                    FinancialPieChartView(
-                        title: "Ваши доходы",
-                        data: incomes,
-                        currencySymbol: "₽"
-                    )
-                    
-                    // Диаграмма долгов
-                    FinancialPieChartView(
-                        title: "Остаток по кредитам",
-                        data: debts,
-                        currencySymbol: "₽"
-                    )
+                    // 3. Поле для отображения совета
+                    TextEditor(text: $adviceText)
+                        .frame(minHeight: 200)
+                        .disabled(true)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray, lineWidth: 1)
+                        )
+                        .padding(.horizontal)
+                        .background(Color(.systemBackground))
                 }
                 .padding()
             }
             .navigationTitle("Статистика")
+            .alert("Ошибка", isPresented: $showError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(errorMessage)
+            }
+            .onAppear {
+                loadExpenses()
+            }
+        }
+    }
+    
+    private func loadExpenses() {
+        isLoadingExpenses = true
+        print("Начало загрузки расходов...")
+        
+        NetworkManager.shared.getExpensesByCategory { result in
+            DispatchQueue.main.async {
+                isLoadingExpenses = false
+                
+                switch result {
+                case .success(let loadedExpenses):
+                    print("Успешно загружено категорий: \(loadedExpenses.count)")
+                    loadedExpenses.forEach { print("Категория: \($0.name), Сумма: \($0.value)") }
+                    
+                    if loadedExpenses.isEmpty {
+                        print("Получен пустой массив расходов")
+                        self.errorMessage = "Нет данных о расходах"
+                        self.showError = true
+                    } else {
+                        self.expenses = loadedExpenses
+                    }
+                    
+                case .failure(let error):
+                    print("Ошибка загрузки: \(error.localizedDescription)")
+                    self.errorMessage = error.localizedDescription
+                    self.showError = true
+                    
+                    // Для отладки покажем тестовые данные при ошибке
+                    self.expenses = debugExpenses
+                }
+            }
+        }
+    }
+    
+    private func fetchAdvice() {
+        isLoadingAdvice = true
+        adviceText = ""
+        print("Запрос совета...")
+        
+        guard let token = NetworkManager.shared.getToken() else {
+            errorMessage = "Необходимо авторизоваться"
+            showError = true
+            isLoadingAdvice = false
+            return
+        }
+        
+        let headers: HTTPHeaders = [
+            "Authorization": "Bearer \(token)",
+            "accept": "*/*"
+        ]
+        
+        AF.request("http://localhost:5163/api/ai/advice",
+                  method: .get,
+                  headers: headers)
+        .validate()
+        .responseDecodable(of: AdviceResponse.self) { response in
+            DispatchQueue.main.async {
+                isLoadingAdvice = false
+                
+                switch response.result {
+                case .success(let adviceResponse):
+                    print("Совет получен успешно")
+                    adviceText = adviceResponse.advice
+                    
+                case .failure(let error):
+                    print("Ошибка получения совета: \(error.localizedDescription)")
+                    
+                    // Для отладки - тестовый совет
+                    adviceText = """
+                    Пример совета:
+                    1. Сократите расходы на транспорт
+                    2. Оптимизируйте траты на еду
+                    3. Создайте резервный фонд
+                    """
+                    
+                    errorMessage = "Не удалось загрузить совет: \(error.localizedDescription)"
+                    showError = true
+                }
+            }
         }
     }
 }
 
-// MARK: - Модификаторы и вспомогательные структуры (как в предыдущем примере)
+struct AdviceResponse: Decodable {
+    let advice: String
+}
+
 
 // MARK: - Модификаторы для стилей
 extension View {
