@@ -7,12 +7,13 @@
 
 import SwiftUI 
 
+import SwiftUI
+
 struct ProfileView: View {
     @State private var user = UserProfile(
-        firstName: "Иван",
-        lastName: "Иванов",
-        email: "ivan.ivanov@example.com",
-        monthlySalary: 150000,
+        fullName: "",
+        email: "",
+        salary: 0,
         currency: "₽"
     )
     
@@ -20,6 +21,9 @@ struct ProfileView: View {
     @State private var showingImagePicker = false
     @State private var inputImage: UIImage?
     @State private var profileImage: Image?
+    @State private var isLoading = false
+    @State private var errorMessage = ""
+    @State private var showError = false
     
     var body: some View {
         ScrollView {
@@ -35,21 +39,25 @@ struct ProfileView: View {
                         showingImagePicker = true
                     }
                 
-                // Форма с данными
-                profileForm
-                
-                // Кнопка сохранения
-                if isEditing {
-                    Button(action: saveProfile) {
-                        Text("Сохранить изменения")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color.blue)
-                            .cornerRadius(10)
+                if isLoading {
+                    ProgressView()
+                } else {
+                    // Форма с данными
+                    profileForm
+                    
+                    // Кнопка сохранения
+                    if isEditing {
+                        Button(action: saveProfile) {
+                            Text("Сохранить изменения")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(Color.blue)
+                                .cornerRadius(10)
+                        }
+                        .padding(.horizontal)
                     }
-                    .padding(.horizontal)
                 }
                 
                 Spacer()
@@ -60,6 +68,15 @@ struct ProfileView: View {
         .navigationBarItems(trailing: editButton)
         .sheet(isPresented: $showingImagePicker, onDismiss: loadImage) {
             ImagePicker(image: $inputImage)
+        }
+        .alert("Ошибка", isPresented: $showError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(errorMessage)
+        }
+        .onAppear {
+            loadProfile()
+            loadSavedImage()
         }
     }
     
@@ -99,24 +116,11 @@ struct ProfileView: View {
                         .foregroundColor(.gray)
                     Spacer()
                     if isEditing {
-                        TextField("Введите имя", text: $user.firstName)
+                        TextField("Введите имя", text: $user.fullName)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .frame(width: 200)
                     } else {
-                        Text(user.firstName)
-                    }
-                }
-                
-                HStack {
-                    Text("Фамилия:")
-                        .foregroundColor(.gray)
-                    Spacer()
-                    if isEditing {
-                        TextField("Введите фамилию", text: $user.lastName)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .frame(width: 200)
-                    } else {
-                        Text(user.lastName)
+                        Text(user.fullName)
                     }
                 }
                 
@@ -124,15 +128,8 @@ struct ProfileView: View {
                     Text("Email:")
                         .foregroundColor(.gray)
                     Spacer()
-                    if isEditing {
-                        TextField("Введите email", text: $user.email)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .frame(width: 200)
-                            .keyboardType(.emailAddress)
-                            .autocapitalization(.none)
-                    } else {
-                        Text(user.email)
-                    }
+                    Text(user.email)
+                        .foregroundColor(.gray)
                 }
                 
                 HStack {
@@ -141,7 +138,7 @@ struct ProfileView: View {
                     Spacer()
                     if isEditing {
                         HStack {
-                            TextField("Сумма", value: $user.monthlySalary, formatter: NumberFormatter())
+                            TextField("Сумма", value: $user.salary, formatter: NumberFormatter())
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .frame(width: 120)
                                 .keyboardType(.numberPad)
@@ -155,7 +152,7 @@ struct ProfileView: View {
                             .frame(width: 80)
                         }
                     } else {
-                        Text("\(user.monthlySalary.formatted()) \(user.currency)")
+                        Text("\(user.salary.formatted()) \(user.currency)")
                     }
                 }
             }
@@ -179,27 +176,79 @@ struct ProfileView: View {
     
     // MARK: - Функции
     
+    private func loadProfile() {
+        isLoading = true
+        NetworkManager.shared.fetchProfile { result in
+            DispatchQueue.main.async {
+                isLoading = false
+                switch result {
+                case .success(let profile):
+                    self.user = UserProfile(
+                        fullName: profile.fullName,
+                        email: profile.email,
+                        salary: profile.salary,
+                        currency: "₽"
+                    )
+                case .failure(let error):
+                    errorMessage = "Не удалось загрузить профиль: \(error.localizedDescription)"
+                    showError = true
+                }
+            }
+        }
+    }
+    
     private func loadImage() {
         guard let inputImage = inputImage else { return }
         profileImage = Image(uiImage: inputImage)
+        
+        // Сохраняем изображение в UserDefaults
+        if let imageData = inputImage.jpegData(compressionQuality: 0.5) {
+            UserDefaults.standard.set(imageData, forKey: "profileImage")
+        }
+    }
+    
+    private func loadSavedImage() {
+        if let imageData = UserDefaults.standard.data(forKey: "profileImage"),
+           let uiImage = UIImage(data: imageData) {
+            profileImage = Image(uiImage: uiImage)
+        }
     }
     
     private func saveProfile() {
-        // Здесь можно добавить логику сохранения в базу данных
+        // Здесь можно добавить логику обновления профиля через API
         withAnimation {
             isEditing = false
+        }
+        
+        // Обновляем профиль через API
+        NetworkManager.shared.updateProfile(
+            salary: user.salary,
+            cushion: 0,
+            financialGoal: "", 
+            financialGoalAmount: 0,
+            financialGoalMonths: 0
+        ) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    print("Профиль успешно обновлен")
+                case .failure(let error):
+                    errorMessage = "Ошибка при обновлении профиля: \(error.localizedDescription)"
+                    showError = true
+                }
+            }
         }
     }
 }
 
 // MARK: - Модель данных
 struct UserProfile {
-    var firstName: String
-    var lastName: String
+    var fullName: String
     var email: String
-    var monthlySalary: Double
+    var salary: Int
     var currency: String
 }
+
 
 // MARK: - Image Picker
 struct ImagePicker: UIViewControllerRepresentable {
