@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		9F9FFEBC2E11E281000B3B2D /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = 9F9FFEBB2E11E281000B3B2D /* Alamofire */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		9F6153E22DFB70CB00FA0505 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -65,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9F9FFEBC2E11E281000B3B2D /* Alamofire in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -125,6 +130,7 @@
 			);
 			name = BankAIUI;
 			packageProductDependencies = (
+				9F9FFEBB2E11E281000B3B2D /* Alamofire */,
 			);
 			productName = BankAIUI;
 			productReference = 9F6153CC2DFB70C900FA0505 /* BankAIUI.app */;
@@ -208,6 +214,9 @@
 			);
 			mainGroup = 9F6153C32DFB70C900FA0505;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				9F9FFEBA2E11E281000B3B2D /* XCRemoteSwiftPackageReference "Alamofire" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 9F6153CD2DFB70C900FA0505 /* Products */;
 			projectDirPath = "";
@@ -581,6 +590,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		9F9FFEBA2E11E281000B3B2D /* XCRemoteSwiftPackageReference "Alamofire" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Alamofire/Alamofire";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.10.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		9F9FFEBB2E11E281000B3B2D /* Alamofire */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9F9FFEBA2E11E281000B3B2D /* XCRemoteSwiftPackageReference "Alamofire" */;
+			productName = Alamofire;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 9F6153C42DFB70C900FA0505 /* Project object */;
 }

@@ -8,13 +8,24 @@
 import SwiftUI
 
 @main
-struct BankAIUIApp: App {
-    let persistenceController = PersistenceController.shared
-
+struct BankAIApp: App {
+    @StateObject private var authState = AuthState()
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
+            if authState.isAuthenticated {
+                MainView()
+            } else {
+                ContentView()
+            }
         }
+    }
+}
+class AuthState: ObservableObject {
+    @Published var isAuthenticated: Bool
+    
+    init() {
+        let token = UserDefaults.standard.string(forKey: "authToken")
+        self.isAuthenticated = token != nil
     }
 }

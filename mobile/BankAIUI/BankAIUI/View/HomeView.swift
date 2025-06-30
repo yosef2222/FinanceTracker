@@ -165,14 +165,25 @@ class AudioRecorderViewModel: ObservableObject {
     func sendMessage() {
         guard !messageText.isEmpty else { return }
         
-        // Останавливаем запись перед отправкой, если она активна
         if isRecording {
             stopRecording()
         }
         
-        print("Отправлено: \(messageText)")
-        messageText = ""
-        isEditingText = false
+        NetworkManager.shared.sendTransactionPrompt(messageText) { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    print("Текст успешно отправлен: \(self?.messageText ?? "")")
+                    self?.messageText = ""
+                    self?.isEditingText = false
+                    
+                case .failure(let error):
+                    print("Ошибка отправки: \(error.localizedDescription)")
+                    self?.lastError = "Ошибка отправки: \(error.localizedDescription)"
+                    self?.showAlert = true
+                }
+            }
+        }
     }
 }
 
@@ -232,7 +243,6 @@ struct HomeView: View {
                     }
                 }
                 
-                // Нижняя панель с управлением
                 VStack(spacing: 16) {
                     Toggle(isOn: $viewModel.isVoiceMode) {
                         Text(viewModel.isVoiceMode ? "Голосовой режим" : "Текстовый режим")
